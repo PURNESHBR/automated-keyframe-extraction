@@ -5,7 +5,7 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
 import json
 
-# Load YOLOv8 model
+# Load YOLOv8 model for object detection
 yolo_model = YOLO("/Users/purneshbr/Desktop/major_project/runs/detect/train4/weights/best.pt")
 if not hasattr(yolo_model, 'names') or not yolo_model.names:
     raise Exception("❌ YOLO model did not load correctly or labels missing.")
