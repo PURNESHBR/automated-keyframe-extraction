@@ -9,7 +9,7 @@ yolo_models = [
     
     YOLO("/Users/umeshkumara/automated-keyframe-extraction/runs/detect/train2/weights/best.pt"),
     YOLO("/Users/umeshkumara/automated-keyframe-extraction/runs/detect/train4/weights/best.pt"),
-    YOLO("/Users/umeshkumara/automated-keyframe-extraction/runs/detect/train3/weights/best.pt")
+    YOLO("/Users/umeshkumara/automated-keyframe-extraction/runs/detect/train5/weights/best.pt")
 
 ]
 
