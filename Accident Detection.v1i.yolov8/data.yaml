@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['accident']
+
+roboflow:
+  workspace: umesh-kumar-a-nwuai
+  project: accident-detection-luup4-5jnkh
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/umesh-kumar-a-nwuai/accident-detection-luup4-5jnkh/dataset/1
