@@ -12,7 +12,7 @@ yolo_models = [
     YOLO("runs/detect/train5/weights/best.pt")
 
 ]
-#hii 
+
 # Load BLIP model for caption generation 
 
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
@@ -87,7 +87,7 @@ def generate_caption(image):
     return caption
 
 # Run the complete pipeline
-video_path = "sample1.mp4"
+video_path = "sample.mp4"
 keyframes, timestamps = extract_keyframes(video_path)
 
 keyframe_data = []
