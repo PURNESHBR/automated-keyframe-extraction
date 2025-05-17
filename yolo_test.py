@@ -6,6 +6,7 @@ from PIL import Image
 
 # Load multiple YOLO models for object detection
 yolo_models = [
+    YOLO("/Users/purneshbr/Desktop/major_project/runs/detect/train/weights/best.pt"),
     YOLO("/Users/purneshbr/Desktop/major_project/runs/detect/train4/weights/best.pt"),
     YOLO("/Users/purneshbr/Desktop/major_project/runs/detect/train2/weights/best.pt")
 ]
