@@ -13,7 +13,6 @@ if not hasattr(yolo_model, 'names') or not yolo_model.names:
 # Load BLIP caption model
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
 caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
-# HIIIII
 # Detection confidence threshold
 CONFIDENCE_THRESHOLD = 0.4
 
