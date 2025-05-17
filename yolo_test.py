@@ -12,7 +12,7 @@ yolo_models = [
     YOLO("runs/detect/train5/weights/best.pt")
 
 ]
-
+#hii 
 # Load BLIP model for caption generation 
 
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
