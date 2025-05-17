@@ -4,14 +4,15 @@ from ultralytics import YOLO
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
 
-# Load multiple YOLO models for object detection
+# Load multiple YOLO models for object detection 
 yolo_models = [
     YOLO("/Users/purneshbr/Desktop/major_project/runs/detect/train/weights/best.pt"),
     YOLO("/Users/purneshbr/Desktop/major_project/runs/detect/train4/weights/best.pt"),
     YOLO("/Users/purneshbr/Desktop/major_project/runs/detect/train2/weights/best.pt")
 ]
 
-# Load BLIP model for caption generation
+# Load BLIP model for caption generation 
+
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
 caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
 
