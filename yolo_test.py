@@ -87,7 +87,7 @@ def generate_caption(image):
     return caption
 
 # Run the complete pipeline
-video_path = "sample.mp4"
+video_path = "sample1.mp4"
 keyframes, timestamps = extract_keyframes(video_path)
 
 keyframe_data = []
