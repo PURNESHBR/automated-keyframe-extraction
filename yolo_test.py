@@ -12,7 +12,7 @@ yolo_models = [
 ]
 
 # Load BLIP model for caption generation 
-
+#change
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
 caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
 
