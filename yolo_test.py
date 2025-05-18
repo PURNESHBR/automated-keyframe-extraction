@@ -6,11 +6,13 @@ from PIL import Image
 
 # Load multiple YOLO models for object detection 
 yolo_models = [
-    
+    YOLO("runs/detect/train/weights/best.pt"),
     YOLO("runs/detect/train2/weights/best.pt"),
+    YOLO("runs/detect/train3/weights/best.pt"),
     YOLO("runs/detect/train4/weights/best.pt"),
     YOLO("runs/detect/train5/weights/best.pt"),
-    YOLO("runs/detect/train7/weights/best.pt")
+    YOLO("runs/detect/train7/weights/best.pt"),
+
 ]
 
 # Load BLIP model for caption generation 
