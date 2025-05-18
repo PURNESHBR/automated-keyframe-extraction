@@ -8,7 +8,6 @@ from PIL import Image
 yolo_models = [
     YOLO("runs/detect/train/weights/best.pt"),
     YOLO("runs/detect/train2/weights/best.pt"),
-    YOLO("runs/detect/train3/weights/best.pt"),
     YOLO("runs/detect/train4/weights/best.pt"),
     YOLO("runs/detect/train5/weights/best.pt"),
     YOLO("runs/detect/train7/weights/best.pt"),
