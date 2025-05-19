@@ -20,7 +20,11 @@ FRAME_SKIP = 5  # Skip every 5 frames for faster processing
 print("🔄 Loading models...")
 yolo_models = [
     YOLO("yolov8n.pt"),  # General model
-    YOLO("runs/detect/train4/weights/best.pt"),  # Best-performing custom model
+    YOLO("runs/detect/train/weights/best.pt"),# Best-performing custom model
+    YOLO("runs/detect/train4/weights/best.pt"),
+    YOLO("runs/detect/train2/weights/best.pt"),
+    YOLO("runs/detect/train5/weights/best.pt"),
+    YOLO("runs/detect/train7/weights/best.pt")
 ]
 
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
