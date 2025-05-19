@@ -13,17 +13,14 @@ COLLISION_SCORE_THRESHOLD = 5
 MIN_OBJECTS_FOR_COLLISION = 1
 DISPLAY_FRAMES = True
 SAVE_FRAMES = True
-CONTEXT_FRAME_WINDOW = 3  # Number of frames before/after for context
+CONTEXT_FRAME_WINDOW = 1  # Reduced for speed
+FRAME_SKIP = 5  # Skip every 5 frames for faster processing
 
 # ---- LOAD MODELS ----
 print("🔄 Loading models...")
 yolo_models = [
-    YOLO("yolov8n.pt"),  # General YOLO model
-    YOLO("runs/detect/train/weights/best.pt"),
-    YOLO("runs/detect/train2/weights/best.pt"),
-    YOLO("runs/detect/train4/weights/best.pt"),
-    YOLO("runs/detect/train5/weights/best.pt"),
-    YOLO("runs/detect/train7/weights/best.pt"),
+    YOLO("yolov8n.pt"),  # General model
+    YOLO("runs/detect/train4/weights/best.pt"),  # Best-performing custom model
 ]
 
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
@@ -40,23 +37,28 @@ def convert_frames_to_time(frame_number, fps):
 def generate_caption(image):
     image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     inputs = processor(images=image_pil, return_tensors="pt")
-    out = caption_model.generate(**inputs, max_new_tokens=50)
+    out = caption_model.generate(**inputs, max_new_tokens=30)
     caption = processor.decode(out[0], skip_special_tokens=True)
     return caption
 
 def generate_contextual_caption(cap, frame_index, fps):
-    """Generate a caption based on multiple frames around the event"""
     frames = []
     for offset in range(-CONTEXT_FRAME_WINDOW, CONTEXT_FRAME_WINDOW + 1):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index + offset)
+        target_index = frame_index + offset
+        if target_index < 0:
+            continue
+        cap.set(cv2.CAP_PROP_POS_FRAMES, target_index)
         ret, frame = cap.read()
         if ret:
             frames.append(frame)
+
     combined_caption = ""
-    for i, f in enumerate(frames):
+    seen = set()
+    for f in frames:
         caption = generate_caption(f)
-        if caption not in combined_caption:
+        if caption not in seen:
             combined_caption += f" {caption.strip('.')}."
+            seen.add(caption)
     return combined_caption.strip()
 
 def detect_collision_frame(image):
@@ -108,6 +110,7 @@ def main():
     collision_data = []
 
     while True:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
         ret, frame = cap.read()
         if not ret:
             break
@@ -128,7 +131,6 @@ def main():
 
                 if timestamp not in seen_timestamps:
                     seen_timestamps.add(timestamp)
-
                     caption = generate_contextual_caption(cap, frame_count, fps)
 
                     if SAVE_FRAMES:
@@ -137,7 +139,7 @@ def main():
 
                     if DISPLAY_FRAMES:
                         cv2.imshow(f"Collision at {timestamp}", frame)
-                        cv2.waitKey(1000)
+                        cv2.waitKey(500)
                         cv2.destroyAllWindows()
 
                     collision_data.append({
@@ -146,12 +148,12 @@ def main():
                         "caption": caption
                     })
 
-        frame_count += 1
+        frame_count += FRAME_SKIP
 
     cap.release()
 
     # ---- FINAL SUMMARY ----
-    print("\ndetected key frames  Summary:\n")
+    print("\n📋 Detected Keyframes Summary:\n")
     if not collision_data:
         print("No major collision frames detected.")
     else:
