@@ -3,22 +3,33 @@ import numpy as np
 from ultralytics import YOLO
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
+import os
 
-# Load multiple YOLO models for object detection 
+# ---- CONFIGURATION ----
+VIDEO_PATH = "RoadAccident.mp4"
+KEYFRAME_DIR = "collision_keyframes"
+CONFIDENCE_THRESHOLD = 0.4
+COLLISION_SCORE_THRESHOLD = 5
+MIN_OBJECTS_FOR_COLLISION = 1
+DISPLAY_FRAMES = True
+SAVE_FRAMES = True
+CONTEXT_FRAME_WINDOW = 3  # Number of frames before/after for context
+
+# ---- LOAD MODELS ----
+print("🔄 Loading models...")
 yolo_models = [
+    YOLO("yolov8n.pt"),  # General YOLO model
     YOLO("runs/detect/train/weights/best.pt"),
     YOLO("runs/detect/train2/weights/best.pt"),
     YOLO("runs/detect/train4/weights/best.pt"),
     YOLO("runs/detect/train5/weights/best.pt"),
     YOLO("runs/detect/train7/weights/best.pt"),
-
 ]
-
-# Load BLIP model for caption generation 
 
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
 caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
 
+# ---- UTILITY FUNCTIONS ----
 def convert_frames_to_time(frame_number, fps):
     total_seconds = frame_number / fps
     hours = int(total_seconds // 3600)
@@ -26,91 +37,128 @@ def convert_frames_to_time(frame_number, fps):
     seconds = int(total_seconds % 60)
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
-def extract_keyframes(video_path, threshold=30):
-    cap = cv2.VideoCapture(video_path)
+def generate_caption(image):
+    image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    inputs = processor(images=image_pil, return_tensors="pt")
+    out = caption_model.generate(**inputs, max_new_tokens=50)
+    caption = processor.decode(out[0], skip_special_tokens=True)
+    return caption
+
+def generate_contextual_caption(cap, frame_index, fps):
+    """Generate a caption based on multiple frames around the event"""
+    frames = []
+    for offset in range(-CONTEXT_FRAME_WINDOW, CONTEXT_FRAME_WINDOW + 1):
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index + offset)
+        ret, frame = cap.read()
+        if ret:
+            frames.append(frame)
+    combined_caption = ""
+    for i, f in enumerate(frames):
+        caption = generate_caption(f)
+        if caption not in combined_caption:
+            combined_caption += f" {caption.strip('.')}."
+    return combined_caption.strip()
+
+def detect_collision_frame(image):
+    all_labels = []
+    all_centers = []
+
+    for model in yolo_models:
+        results = model.predict(image, save=False, verbose=False)[0]
+        for box in results.boxes:
+            class_id = int(box.cls[0])
+            confidence = float(box.conf[0])
+            label = model.names[class_id]
+
+            if confidence < CONFIDENCE_THRESHOLD:
+                continue
+
+            if label in ["car", "truck", "bus", "motorbike", "person"]:
+                all_labels.append(label)
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                cx = (x1 + x2) / 2
+                cy = (y1 + y2) / 2
+                all_centers.append((cx, cy))
+
+    if len(all_labels) >= MIN_OBJECTS_FOR_COLLISION:
+        for i in range(len(all_centers)):
+            for j in range(i + 1, len(all_centers)):
+                dist = np.linalg.norm(np.array(all_centers[i]) - np.array(all_centers[j]))
+                if dist < 200:
+                    return True, all_labels
+        if len(all_labels) >= 3:
+            return True, all_labels
+
+    return False, all_labels
+
+# ---- MAIN PIPELINE ----
+def main():
+    if SAVE_FRAMES and not os.path.exists(KEYFRAME_DIR):
+        os.makedirs(KEYFRAME_DIR)
+
+    cap = cv2.VideoCapture(VIDEO_PATH)
     if not cap.isOpened():
-        print("Error: Cannot open video file.")
-        return [], []
+        print("❌ Error: Cannot open video.")
+        return
 
     fps = cap.get(cv2.CAP_PROP_FPS)
-    keyframes = []
-    keyframe_timestamps = []
-    prev_frame = None
     frame_count = 0
+    prev_gray = None
+    seen_timestamps = set()
+    collision_data = []
 
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        motion_score = 0
 
-        if prev_frame is not None:
-            diff = cv2.absdiff(gray_frame, prev_frame)
-            score = np.sum(diff) / diff.size
+        if prev_gray is not None:
+            diff = cv2.absdiff(gray, prev_gray)
+            motion_score = np.sum(diff) / diff.size
 
-            if score > threshold:
+        prev_gray = gray.copy()
+
+        if motion_score > COLLISION_SCORE_THRESHOLD:
+            is_collision, objects = detect_collision_frame(frame)
+            if is_collision:
                 timestamp = convert_frames_to_time(frame_count, fps)
-                keyframes.append(frame)
-                keyframe_timestamps.append(timestamp)
-                print(f"🔹 Keyframe detected at {timestamp}")
 
-        prev_frame = gray_frame
+                if timestamp not in seen_timestamps:
+                    seen_timestamps.add(timestamp)
+
+                    caption = generate_contextual_caption(cap, frame_count, fps)
+
+                    if SAVE_FRAMES:
+                        filename = os.path.join(KEYFRAME_DIR, f"collision_{frame_count}_{timestamp.replace(':', '-')}.jpg")
+                        cv2.imwrite(filename, frame)
+
+                    if DISPLAY_FRAMES:
+                        cv2.imshow(f"Collision at {timestamp}", frame)
+                        cv2.waitKey(1000)
+                        cv2.destroyAllWindows()
+
+                    collision_data.append({
+                        "timestamp": timestamp,
+                        "objects": objects,
+                        "caption": caption
+                    })
+
         frame_count += 1
 
     cap.release()
-    return keyframes, keyframe_timestamps
 
-def detect_objects(image):
-    detected_objects = []
+    # ---- FINAL SUMMARY ----
+    print("\ndetected key frames  Summary:\n")
+    if not collision_data:
+        print("No major collision frames detected.")
+    else:
+        for data in collision_data:
+            print(f"⏳ Timestamp: {data['timestamp']}")
+            print(f"   - Objects Detected: {', '.join(data['objects'])}")
+            print(f"   - Scene Description: {data['caption']}\n")
 
-    for model in yolo_models:
-        results = model.predict(source=image, save=False, verbose=False)
-
-        for r in results:
-            for box in r.boxes:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                confidence = box.conf[0]
-                class_id = int(box.cls[0])
-                label = f"{model.names[class_id]}: {confidence:.2f}"
-                detected_objects.append(model.names[class_id])
-
-                cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-    return image, detected_objects
-
-def generate_caption(image):
-    image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    inputs = processor(images=image_pil, return_tensors="pt")
-    out = caption_model.generate(**inputs)
-    caption = processor.decode(out[0], skip_special_tokens=True)
-    return caption
-
-# Run the complete pipeline
-video_path = "sample.mp4"
-keyframes, timestamps = extract_keyframes(video_path)
-
-keyframe_data = []
-
-for idx, (frame, timestamp) in enumerate(zip(keyframes, timestamps)):
-    detected_frame, objects = detect_objects(frame)
-    caption = generate_caption(frame)
-
-    keyframe_data.append({
-        "timestamp": timestamp,
-        "objects": objects,
-        "caption": caption
-    })
-
-    # Display each keyframe briefly
-    cv2.imshow(f"Keyframe at {timestamp}", detected_frame)
-    cv2.waitKey(1000)
-    cv2.destroyAllWindows()
-
-# Final report
-print("\n📌 **Keyframe Analysis Report:**\n")
-for data in keyframe_data:
-    print(f"⏳ Keyframe at {data['timestamp']}:")
-    print(f"   - Objects Detected: {', '.join(data['objects']) if data['objects'] else 'None'}")
-    print(f"   - Scene Description: {data['caption']}\n")
+if __name__ == "__main__":
+    main()
