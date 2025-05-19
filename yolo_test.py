@@ -14,7 +14,7 @@ MIN_OBJECTS_FOR_COLLISION = 1
 DISPLAY_FRAMES = True
 SAVE_FRAMES = True
 CONTEXT_FRAME_WINDOW = 1  # Reduced for speed
-FRAME_SKIP = 5  # Skip every 5 frames for faster processing
+FRAME_SKIP = 10 # Skip every 5 frames for faster processing
 
 # ---- LOAD MODELS ----
 print("🔄 Loading models...")
