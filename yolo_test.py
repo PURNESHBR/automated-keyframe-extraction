@@ -14,13 +14,13 @@ MIN_OBJECTS_FOR_COLLISION = 1
 DISPLAY_FRAMES = True
 SAVE_FRAMES = True
 CONTEXT_FRAME_WINDOW = 1  # Reduced for speed
-FRAME_SKIP = 10 # Skip every 5 frames for faster processing
+FRAME_SKIP = 10 # Skip every 10 frames for faster processing
 
 # ---- LOAD MODELS ----
 print("🔄 Loading models...")
 yolo_models = [
     YOLO("yolov8n.pt"), 
-    YOLO("runs/detect/train/weights/best.pt"),# Best-performing custom model
+    YOLO("runs/detect/train/weights/best.pt"),
     YOLO("runs/detect/train4/weights/best.pt"),
     YOLO("runs/detect/train2/weights/best.pt"),
     YOLO("runs/detect/train5/weights/best.pt"),
