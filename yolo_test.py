@@ -19,7 +19,7 @@ FRAME_SKIP = 10 # Skip every 5 frames for faster processing
 # ---- LOAD MODELS ----
 print("🔄 Loading models...")
 yolo_models = [
-    YOLO("yolov8n.pt"),  # General model
+    YOLO("yolov8n.pt"), 
     YOLO("runs/detect/train/weights/best.pt"),# Best-performing custom model
     YOLO("runs/detect/train4/weights/best.pt"),
     YOLO("runs/detect/train2/weights/best.pt"),
