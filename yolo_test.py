@@ -17,7 +17,7 @@ CONTEXT_FRAME_WINDOW = 1  # Reduced for speed
 FRAME_SKIP = 10 # Skip every 10 frames for faster processing
 
 # ---- LOAD MODELS ----
-print("🔄 Loading models...")
+print(" Loading models...")
 yolo_models = [
     YOLO("yolov8n.pt"), 
     YOLO("runs/detect/train/weights/best.pt"),
@@ -159,7 +159,7 @@ def main():
     # ---- FINAL SUMMARY ----
     print("\n📋 Detected Keyframes Summary:\n")
     if not collision_data:
-        print("No major collision frames detected.")
+        print("No major key frames detected.")
     else:
         for data in collision_data:
             print(f"⏳ Timestamp: {data['timestamp']}")
