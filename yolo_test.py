@@ -6,7 +6,7 @@ from PIL import Image
 import os
 
 # ---- CONFIGURATION ----
-VIDEO_PATH = "RoadAccident.mp4"
+VIDEO_PATH = "sample.mp4"
 KEYFRAME_DIR = "collision_keyframes"
 CONFIDENCE_THRESHOLD = 0.4
 COLLISION_SCORE_THRESHOLD = 5
